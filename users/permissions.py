@@ -1,49 +1,43 @@
 from rest_framework import permissions
 
-
+# Permission class to check if user is Guest (unauthenticated)
 class IsGuest(permissions.BasePermission):
-    """Permission class to check if user is Guest (unauthenticated)"""
 
     def has_permission(self, request, view):
         return not request.user.is_authenticated
 
-
+# Permission class to check if user has User role
 class IsUser(permissions.BasePermission):
-    """Permission class to check if user has User role"""
 
     def has_permission(self, request, view):
         if not request.user.is_authenticated:
             return False
         return request.user.role and request.user.role.name == 'User'
 
-
+# Permission class to check if user is Admin
 class IsAdmin(permissions.BasePermission):
-    """Permission class to check if user is Admin"""
 
     def has_permission(self, request, view):
         return request.user.is_authenticated and request.user.is_admin
 
-
+# Permission class to check if user has User or Admin role
 class IsUserOrAdmin(permissions.BasePermission):
-    """Permission class to check if user has User or Admin role"""
 
     def has_permission(self, request, view):
         if not request.user.is_authenticated:
             return False
         return request.user.role and request.user.role.name in ['User', 'Admin']
 
-
+# Permission class to check if user is Guest or has User role
 class IsGuestOrUser(permissions.BasePermission):
-    """Permission class to check if user is Guest or has User role"""
 
     def has_permission(self, request, view):
         if not request.user.is_authenticated:
             return True  # Guest
         return request.user.role and request.user.role.name in ['User', 'Admin']
 
-
+# Permission class to check if user is owner or admin
 class IsOwnerOrAdmin(permissions.BasePermission):
-    """Permission class to check if user is owner or admin"""
 
     def has_object_permission(self, request, view, obj):
         if request.user.is_authenticated and request.user.is_admin:
@@ -51,11 +45,9 @@ class IsOwnerOrAdmin(permissions.BasePermission):
         return obj.user == request.user
 
 
+# custom permission class to check if user has specific permission.
+# Usage: Set permission_required attribute on the view.
 class HasPermission(permissions.BasePermission):
-    """
-    Custom permission class to check if user has specific permission.
-    Usage: Set permission_required attribute on the view.
-    """
 
     def has_permission(self, request, view):
         permission_code = getattr(view, 'permission_required', None)
