@@ -59,3 +59,9 @@ class UserUpdateSerializer(serializers.ModelSerializer):
         if value and not Role.objects.filter(name=value).exists():
             raise serializers.ValidationError(f"Role '{value}' does not exist")
         return value
+
+
+class LoginResponseSerializer(serializers.Serializer):
+    access = serializers.CharField()
+    refresh = serializers.CharField()
+    user = UserSerializer()

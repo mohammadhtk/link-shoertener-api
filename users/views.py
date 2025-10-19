@@ -4,10 +4,12 @@ from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from drf_spectacular.utils import extend_schema, OpenApiResponse
+from drf_spectacular.types import OpenApiTypes
 from .models import User, Role, Permission
 from .serializers import (
     UserSerializer, UserRegistrationSerializer, UserLoginSerializer,
-    UserUpdateSerializer, RoleSerializer, PermissionSerializer
+    UserUpdateSerializer, RoleSerializer, PermissionSerializer,
+    LoginResponseSerializer
 )
 from .services import UserService
 from .permissions import IsAdmin, CanManageUsers
@@ -44,10 +46,9 @@ class UserLoginView(APIView):
         request=UserLoginSerializer,
         responses={
             200: OpenApiResponse(
-                description='Login successful',
-                response={'access': 'string', 'refresh': 'string', 'user': UserSerializer}
-            ),
-            401: OpenApiResponse(description='Invalid credentials')
+                response=LoginResponseSerializer,  # or OpenApiTypes.OBJECT if you don’t want a serializer
+                description='Login successful'
+            )
         }
     )
     def post(self, request):
