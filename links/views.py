@@ -1,13 +1,17 @@
 from rest_framework.views import APIView
-from rest_framework.generics import ListAPIView, RetrieveAPIView, UpdateAPIView, DestroyAPIView
+from rest_framework.generics import ListAPIView, RetrieveAPIView
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from django.shortcuts import redirect
-from drf_spectacular.utils import extend_schema, OpenApiResponse
+from drf_spectacular.utils import extend_schema
 from .models import Link
 from .serializers import LinkSerializer, LinkCreateSerializer, LinkUpdateSerializer
 from .services import LinkService
+from analytics.services import AnalyticsService
+from .schemas import (link_create_schema, link_update_schema, link_delete_schema,
+                      link_list_schema, link_detail_schema, link_stats_schema, link_toggle_active_schema,
+                      link_check_status_schema)
 from users.permissions import (
     IsOwnerOrAdmin, IsAdmin, CanShortenLink,
     CanAddNote, CanEditLink, CanViewStats, CanManageAllLinks,
@@ -19,10 +23,7 @@ from users.permissions import (
 class LinkCreateView(APIView):
     permission_classes = [CanShortenLink]
 
-    @extend_schema(
-        request=LinkCreateSerializer,
-        responses={201: LinkSerializer, 403: OpenApiResponse(description='Permission denied')}
-    )
+    @link_create_schema
     def post(self, request):
         serializer = LinkCreateSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -56,6 +57,7 @@ class LinkListView(ListAPIView):
     serializer_class = LinkSerializer
     permission_classes = [IsAuthenticated]
 
+    @link_list_schema
     def get_queryset(self):
         user = self.request.user
         if user.has_permission('manage_all_links'):
@@ -68,6 +70,7 @@ class LinkDetailView(RetrieveAPIView):
     serializer_class = LinkSerializer
     permission_classes = [IsAuthenticated, IsOwnerOrAdmin]
 
+    @link_detail_schema
     def get_queryset(self):
         user = self.request.user
         if user.has_permission('manage_all_links'):
@@ -79,10 +82,7 @@ class LinkDetailView(RetrieveAPIView):
 class LinkUpdateView(APIView):
     permission_classes = [IsAuthenticated, CanEditLink, IsOwnerOrAdmin]
 
-    @extend_schema(
-        request=LinkUpdateSerializer,
-        responses={200: LinkSerializer, 403: OpenApiResponse(description='Permission denied')}
-    )
+    @link_update_schema
     def patch(self, request, pk):
         try:
             link = Link.objects.get(pk=pk)
@@ -130,7 +130,7 @@ class LinkUpdateView(APIView):
 class LinkDeleteView(APIView):
     permission_classes = [IsAuthenticated, CanManageAllLinks]
 
-    @extend_schema(responses={204: None})
+    @link_delete_schema
     def delete(self, request, pk):
         try:
             link = Link.objects.get(pk=pk)
@@ -148,12 +148,7 @@ class LinkDeleteView(APIView):
 class LinkStatsView(APIView):
     permission_classes = [IsAuthenticated, CanViewStats, IsOwnerOrAdmin]
 
-    @extend_schema(
-        responses={200: OpenApiResponse(
-            description='Link statistics',
-            response={'total_clicks': 'integer', 'recent_clicks': 'array'}
-        )}
-    )
+    @link_stats_schema
     def get(self, request, pk):
         try:
             link = Link.objects.get(pk=pk)
@@ -178,7 +173,7 @@ class LinkStatsView(APIView):
 class LinkToggleActiveView(APIView):
     permission_classes = [IsAuthenticated, CanManageAllLinks]
 
-    @extend_schema(responses={200: LinkSerializer})
+    @link_toggle_active_schema
     def post(self, request, pk):
         try:
             link = Link.objects.get(pk=pk)
@@ -197,12 +192,7 @@ class LinkToggleActiveView(APIView):
 class LinkCheckStatusView(APIView):
     permission_classes = [AllowAny]
 
-    @extend_schema(
-        responses={200: OpenApiResponse(
-            description='Link status',
-            response={'is_active': 'boolean', 'short_code': 'string'}
-        )}
-    )
+    @link_check_status_schema
     def get(self, request, pk):
         try:
             link = Link.objects.get(pk=pk)
