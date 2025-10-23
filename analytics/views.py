@@ -15,7 +15,9 @@ class ClickStatsListView(ListAPIView):
     serializer_class = ClickStatsSerializer
     permission_classes = [IsAdmin]
 
-
+    @clickstats_list_schema
+    def get(self, request, *args, **kwargs):
+        return super().get(request, *args, **kwargs)
 
 # Get click statistics details (Admin only)
 class ClickStatsDetailView(RetrieveAPIView):
@@ -23,17 +25,16 @@ class ClickStatsDetailView(RetrieveAPIView):
     serializer_class = ClickStatsSerializer
     permission_classes = [IsAdmin]
 
+    @clickstats_detail_schema
+    def get(self, request, *args, **kwargs):
+        return super().get(request, *args, **kwargs)
+
 
 # Get global statistics (Admin only)
 class GlobalStatsView(APIView):
     permission_classes = [IsAdmin]
 
-    @extend_schema(
-        responses={200: OpenApiResponse(
-            description='Global statistics',
-            response={'total_links': 'integer', 'total_clicks': 'integer'}
-        )}
-    )
+    @global_stats_schema
     def get(self, request):
         stats = AnalyticsService.get_global_stats()
         return Response(stats)
