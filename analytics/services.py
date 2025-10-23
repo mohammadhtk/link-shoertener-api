@@ -9,6 +9,7 @@ class AnalyticsService:
     # Track a click on a link (privacy-safe - no personal data)
     @staticmethod
     def track_click(link):
+
         return ClickStats.objects.create(link=link)
 
     # Get stats for a link (privacy-safe)
@@ -20,7 +21,7 @@ class AnalyticsService:
         total_clicks = clicks.count()
 
         # Recent click timestamps
-        recent_clicks = clicks[:20].values('clicked_at')
+        recent_clicks = clicks.order_by('-clicked_at')[:20].values('clicked_at')
 
         # Daily clicks (last 30 days)
         thirty_days_ago = timezone.now() - timedelta(days=30)
@@ -28,10 +29,17 @@ class AnalyticsService:
             select={'day': 'DATE(clicked_at)'}
         ).values('day').annotate(count=Count('id')).order_by('day')
 
+        # Weekly clicks (last 12 weeks)
+        twelve_weeks_ago = timezone.now() - timedelta(weeks=12)
+        weekly_clicks = clicks.filter(clicked_at__gte=twelve_weeks_ago).extra(
+            select={'week': "DATE_TRUNC('week', clicked_at)"}
+        ).values('week').annotate(count=Count('id')).order_by('week')
+
         return {
             'total_clicks': total_clicks,
             'recent_clicks': list(recent_clicks),
             'daily_clicks': list(daily_clicks),
+            'weekly_clicks': list(weekly_clicks),
         }
 
     # Get global analytics stats

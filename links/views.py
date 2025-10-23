@@ -8,14 +8,15 @@ from drf_spectacular.utils import extend_schema
 from .models import Link
 from .serializers import LinkSerializer, LinkCreateSerializer, LinkUpdateSerializer
 from .services import LinkService
-from analytics.services import AnalyticsService
-from .schemas import (link_create_schema, link_update_schema, link_delete_schema,
-                      link_list_schema, link_detail_schema, link_stats_schema, link_toggle_active_schema,
-                      link_check_status_schema)
 from users.permissions import (
     IsOwnerOrAdmin, IsAdmin, CanShortenLink,
-    CanAddNote, CanEditLink, CanViewStats, CanManageAllLinks,
-    IsGuestOrUser
+     CanEditLink, CanViewStats, CanManageAllLinks,
+)
+from analytics.services import AnalyticsService
+from .schemas import (
+    link_create_schema, link_list_schema, link_detail_schema,
+    link_update_schema, link_delete_schema, link_stats_schema,
+    link_toggle_active_schema, link_check_status_schema, user_links_schema
 )
 
 
@@ -53,16 +54,32 @@ class LinkCreateView(APIView):
 
 # List user's links (User, Admin)
 class LinkListView(ListAPIView):
-
     serializer_class = LinkSerializer
     permission_classes = [IsAuthenticated]
 
     @link_list_schema
+    def get(self, request, *args, **kwargs):
+        return super().get(request, *args, **kwargs)
+
     def get_queryset(self):
         user = self.request.user
         if user.has_permission('manage_all_links'):
             return Link.objects.all()
         return Link.objects.filter(user=user)
+
+
+# List links for a specific user (Admin only)
+class UserLinksView(ListAPIView):
+    serializer_class = LinkSerializer
+    permission_classes = [IsAuthenticated, IsAdmin]
+
+    @user_links_schema
+    def get(self, request, *args, **kwargs):
+        return super().get(request, *args, **kwargs)
+
+    def get_queryset(self):
+        user_id = self.kwargs.get('user_id')
+        return Link.objects.filter(user_id=user_id)
 
 
 # Get link details (Owner or Admin)
@@ -71,6 +88,9 @@ class LinkDetailView(RetrieveAPIView):
     permission_classes = [IsAuthenticated, IsOwnerOrAdmin]
 
     @link_detail_schema
+    def get(self, request, *args, **kwargs):
+        return super().get(request, *args, **kwargs)
+
     def get_queryset(self):
         user = self.request.user
         if user.has_permission('manage_all_links'):

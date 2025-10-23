@@ -3,26 +3,29 @@ from rest_framework.generics import ListAPIView, RetrieveAPIView, UpdateAPIView,
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.permissions import AllowAny, IsAuthenticated
-from drf_spectacular.utils import extend_schema, OpenApiResponse
-from drf_spectacular.types import OpenApiTypes
+from rest_framework.filters import SearchFilter, OrderingFilter
+from django_filters.rest_framework import DjangoFilterBackend
 from .models import User, Role, Permission
 from .serializers import (
     UserSerializer, UserRegistrationSerializer, UserLoginSerializer,
-    UserUpdateSerializer, RoleSerializer, PermissionSerializer,
-    LoginResponseSerializer
+    UserUpdateSerializer, RoleSerializer, PermissionSerializer
 )
 from .services import UserService
 from .permissions import IsAdmin, CanManageUsers
+from .schemas import (
+    user_register_schema, user_login_schema, user_me_schema,
+    user_list_schema, user_detail_schema, user_update_put_schema,
+    user_update_patch_schema, user_delete_schema, role_list_schema,
+    role_detail_schema, role_permissions_schema, permission_list_schema,
+    permission_detail_schema
+)
+
 
 # Register a new user
 class UserRegisterView(APIView):
-
     permission_classes = [AllowAny]
 
-    @extend_schema(
-        request=UserRegistrationSerializer,
-        responses={201: UserSerializer}
-    )
+    @user_register_schema
     def post(self, request):
         serializer = UserRegistrationSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -38,19 +41,12 @@ class UserRegisterView(APIView):
             status=status.HTTP_201_CREATED
         )
 
+
 # Login user and get JWT tokens
 class UserLoginView(APIView):
     permission_classes = [AllowAny]
 
-    @extend_schema(
-        request=UserLoginSerializer,
-        responses={
-            200: OpenApiResponse(
-                response=LoginResponseSerializer,  # or OpenApiTypes.OBJECT if you don’t want a serializer
-                description='Login successful'
-            )
-        }
-    )
+    @user_login_schema
     def post(self, request):
         serializer = UserLoginSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -72,41 +68,55 @@ class UserLoginView(APIView):
             'user': UserSerializer(result['user']).data
         })
 
+
 # Get current authenticated user
 class UserMeView(APIView):
     permission_classes = [IsAuthenticated]
 
-    @extend_schema(responses={200: UserSerializer})
+    @user_me_schema
     def get(self, request):
         serializer = UserSerializer(request.user)
         return Response(serializer.data)
 
+
 # List all users (Admin only)
 class UserListView(ListAPIView):
-
     queryset = User.objects.all()
     serializer_class = UserSerializer
     permission_classes = [IsAuthenticated, CanManageUsers]
+    filter_backends = [DjangoFilterBackend, SearchFilter, OrderingFilter]
+    filterset_fields = ['is_active', 'role__name']
+    search_fields = ['username', 'email']
+    ordering_fields = ['username', 'email', 'created_at']
+    ordering = ['-created_at']
+
+    @user_list_schema
+    def get(self, request, *args, **kwargs):
+        return super().get(request, *args, **kwargs)
 
 
 # Get user details (Admin only)
 class UserDetailView(RetrieveAPIView):
-
     queryset = User.objects.all()
     serializer_class = UserSerializer
     permission_classes = [IsAuthenticated, CanManageUsers]
 
-# Update user (admin only)
+    @user_detail_schema
+    def get(self, request, *args, **kwargs):
+        return super().get(request, *args, **kwargs)
+
+
+# Update user (Admin only)
 class UserUpdateView(UpdateAPIView):
     queryset = User.objects.all()
     serializer_class = UserUpdateSerializer
     permission_classes = [IsAuthenticated, CanManageUsers]
 
-    @extend_schema(request=UserUpdateSerializer, responses={200: UserSerializer})
+    @user_update_put_schema
     def put(self, request, *args, **kwargs):
         return self.update(request, *args, **kwargs)
 
-    @extend_schema(request=UserUpdateSerializer, responses={200: UserSerializer})
+    @user_update_patch_schema
     def patch(self, request, *args, **kwargs):
         return self.partial_update(request, *args, **kwargs)
 
@@ -115,11 +125,16 @@ class UserUpdateView(UpdateAPIView):
         user = UserService.update_user(user, **serializer.validated_data)
         return user
 
+
 # Delete user (Admin only)
 class UserDeleteView(DestroyAPIView):
     queryset = User.objects.all()
     serializer_class = UserSerializer
     permission_classes = [IsAuthenticated, CanManageUsers]
+
+    @user_delete_schema
+    def delete(self, request, *args, **kwargs):
+        return super().delete(request, *args, **kwargs)
 
 
 # List all roles
@@ -128,6 +143,10 @@ class RoleListView(ListAPIView):
     serializer_class = RoleSerializer
     permission_classes = [IsAuthenticated]
 
+    @role_list_schema
+    def get(self, request, *args, **kwargs):
+        return super().get(request, *args, **kwargs)
+
 
 # Get role details
 class RoleDetailView(RetrieveAPIView):
@@ -135,12 +154,16 @@ class RoleDetailView(RetrieveAPIView):
     serializer_class = RoleSerializer
     permission_classes = [IsAuthenticated]
 
+    @role_detail_schema
+    def get(self, request, *args, **kwargs):
+        return super().get(request, *args, **kwargs)
+
 
 # Get all permissions for a specific role
 class RolePermissionsView(APIView):
     permission_classes = [IsAuthenticated]
 
-    @extend_schema(responses={200: PermissionSerializer(many=True)})
+    @role_permissions_schema
     def get(self, request, pk):
         try:
             role = Role.objects.get(pk=pk)
@@ -160,9 +183,17 @@ class PermissionListView(ListAPIView):
     serializer_class = PermissionSerializer
     permission_classes = [IsAuthenticated, IsAdmin]
 
+    @permission_list_schema
+    def get(self, request, *args, **kwargs):
+        return super().get(request, *args, **kwargs)
+
 
 # Get permission details (Admin only)
 class PermissionDetailView(RetrieveAPIView):
     queryset = Permission.objects.all()
     serializer_class = PermissionSerializer
     permission_classes = [IsAuthenticated, IsAdmin]
+
+    @permission_detail_schema
+    def get(self, request, *args, **kwargs):
+        return super().get(request, *args, **kwargs)

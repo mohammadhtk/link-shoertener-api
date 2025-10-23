@@ -6,15 +6,21 @@ class LinkSerializer(serializers.ModelSerializer):
     short_url = serializers.CharField(read_only=True)
     total_clicks = serializers.IntegerField(read_only=True)
     user_username = serializers.CharField(source='user.username', read_only=True)
+    click_timestamps = serializers.SerializerMethodField()
 
     class Meta:
         model = Link
         fields = [
             'id', 'short_code', 'custom_alias', 'short_url', 'original_url',
             'user', 'user_username', 'note', 'is_active', 'total_clicks',
-            'created_at', 'updated_at'
+            'click_timestamps', 'created_at', 'updated_at'
         ]
         read_only_fields = ['id', 'short_code', 'user', 'created_at', 'updated_at']
+
+    # Get last 10 click timestamps
+    def get_click_timestamps(self, obj):
+        recent_clicks = obj.clicks.order_by('-clicked_at')[:10]
+        return [click.clicked_at for click in recent_clicks]
 
 
 class LinkCreateSerializer(serializers.ModelSerializer):

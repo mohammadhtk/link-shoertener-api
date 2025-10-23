@@ -1,12 +1,14 @@
 from django.urls import path
 from .views import (
     LinkCreateView, LinkListView, LinkDetailView, LinkUpdateView, LinkDeleteView,
-    LinkStatsView, LinkToggleActiveView, LinkCheckStatusView, redirect_link
+    LinkStatsView, LinkToggleActiveView, LinkCheckStatusView, redirect_link,
+    UserLinksView
 )
 
 api_urlpatterns = [
     path('', LinkCreateView.as_view(), name='link-create'),
     path('list/', LinkListView.as_view(), name='link-list'),
+    path('user/<int:user_id>/', UserLinksView.as_view(), name='user-links'),
     path('<int:pk>/', LinkDetailView.as_view(), name='link-detail'),
     path('<int:pk>/update/', LinkUpdateView.as_view(), name='link-update'),
     path('<int:pk>/delete/', LinkDeleteView.as_view(), name='link-delete'),

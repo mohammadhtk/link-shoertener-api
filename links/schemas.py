@@ -1,4 +1,5 @@
-from drf_spectacular.utils import extend_schema, OpenApiResponse, OpenApiExample
+from drf_spectacular.utils import extend_schema, OpenApiResponse, OpenApiExample, OpenApiParameter
+from drf_spectacular.types import OpenApiTypes
 from .serializers import LinkSerializer, LinkCreateSerializer, LinkUpdateSerializer
 
 
@@ -182,5 +183,39 @@ link_check_status_schema = extend_schema(
             ]
         ),
         404: OpenApiResponse(description='Link not found')
+    }
+)
+
+user_links_schema = extend_schema(
+    tags=['Links'],
+    summary='List links for a specific user',
+    description='Retrieve all links created by a specific user. Admin permission required.',
+    parameters=[
+        OpenApiParameter(
+            name='user_id',
+            type=OpenApiTypes.INT,
+            location=OpenApiParameter.PATH,
+            description='User ID'
+        ),
+        OpenApiParameter(
+            name='page',
+            type=OpenApiTypes.INT,
+            location=OpenApiParameter.QUERY,
+            description='Page number for pagination'
+        ),
+        OpenApiParameter(
+            name='page_size',
+            type=OpenApiTypes.INT,
+            location=OpenApiParameter.QUERY,
+            description='Number of items per page'
+        )
+    ],
+    responses={
+        200: OpenApiResponse(
+            response=LinkSerializer(many=True),
+            description='List of user links'
+        ),
+        403: OpenApiResponse(description='Permission denied - Admin only'),
+        404: OpenApiResponse(description='User not found')
     }
 )
