@@ -51,3 +51,29 @@ global_stats_schema = extend_schema(
         403: OpenApiResponse(description='Permission denied')
     }
 )
+
+chart_stats_schema = extend_schema(
+        tags=['Analytics'],
+        summary='Get click chart data',
+        description='Returns click data formatted for chart visualization (daily and weekly aggregations)',
+        responses={
+            200: OpenApiResponse(
+                description='Chart data retrieved successfully',
+                examples=[
+                    OpenApiExample(
+                        'Chart Data Example',
+                        value={
+                            'daily': [
+                                {'date': '2024-01-01', 'clicks': 45},
+                                {'date': '2024-01-02', 'clicks': 67},
+                            ],
+                            'weekly': [
+                                {'week': '2024-W01', 'clicks': 312},
+                                {'week': '2024-W02', 'clicks': 289},
+                            ]
+                        }
+                    )
+                ]
+            )
+        }
+    )

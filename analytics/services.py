@@ -72,3 +72,37 @@ class AnalyticsService:
                 for link in top_links
             ]
         }
+
+    # Get click data formatted for charts
+    @staticmethod
+    def get_chart_data():
+        # Daily clicks (last 30 days)
+        thirty_days_ago = timezone.now() - timedelta(days=30)
+        daily_data = ClickStats.objects.filter(
+            clicked_at__gte=thirty_days_ago
+        ).extra(
+            select={'date': 'DATE(clicked_at)'}
+        ).values('date').annotate(
+            clicks=Count('id')
+        ).order_by('date')
+
+        # Weekly clicks (last 12 weeks)
+        twelve_weeks_ago = timezone.now() - timedelta(weeks=12)
+        weekly_data = ClickStats.objects.filter(
+            clicked_at__gte=twelve_weeks_ago
+        ).extra(
+            select={'week': "TO_CHAR(clicked_at, 'IYYY-IW')"}
+        ).values('week').annotate(
+            clicks=Count('id')
+        ).order_by('week')
+
+        return {
+            'daily': [
+                {'date': str(item['date']), 'clicks': item['clicks']}
+                for item in daily_data
+            ],
+            'weekly': [
+                {'week': item['week'], 'clicks': item['clicks']}
+                for item in weekly_data
+            ]
+        }

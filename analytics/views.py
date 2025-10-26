@@ -6,7 +6,7 @@ from .models import ClickStats
 from .serializers import ClickStatsSerializer
 from .services import AnalyticsService
 from users.permissions import IsAdmin
-from .schemas import clickstats_list_schema, clickstats_detail_schema, global_stats_schema
+from .schemas import clickstats_list_schema, clickstats_detail_schema, global_stats_schema, chart_stats_schema
 
 
 # List all click statistics (Admin only)
@@ -38,3 +38,13 @@ class GlobalStatsView(APIView):
     def get(self, request):
         stats = AnalyticsService.get_global_stats()
         return Response(stats)
+
+
+# Get click chart data for visualization (Admin only)
+class ClickChartDataView(APIView):
+    permission_classes = [IsAdmin]
+
+    @chart_stats_schema
+    def get(self, request):
+        chart_data = AnalyticsService.get_chart_data()
+        return Response(chart_data)

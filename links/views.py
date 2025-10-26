@@ -3,11 +3,14 @@ from rest_framework.generics import ListAPIView, RetrieveAPIView
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.permissions import AllowAny, IsAuthenticated
+from django_filters.rest_framework import DjangoFilterBackend
+from rest_framework.filters import OrderingFilter, SearchFilter
 from django.shortcuts import redirect
 from drf_spectacular.utils import extend_schema
 from .models import Link
 from .serializers import LinkSerializer, LinkCreateSerializer, LinkUpdateSerializer
 from .services import LinkService
+from .filters import LinkFilter
 from users.permissions import (
     IsOwnerOrAdmin, IsAdmin, CanShortenLink,
      CanEditLink, CanViewStats, CanManageAllLinks,
@@ -56,6 +59,11 @@ class LinkCreateView(APIView):
 class LinkListView(ListAPIView):
     serializer_class = LinkSerializer
     permission_classes = [IsAuthenticated]
+    filter_backends = [DjangoFilterBackend, SearchFilter, OrderingFilter]
+    filterset_class = LinkFilter
+    search_fields = ['short_code', 'custom_alias', 'original_url', 'note']
+    ordering_fields = ['created_at', 'updated_at', 'is_active']
+    ordering = ['-created_at']
 
     @link_list_schema
     def get(self, request, *args, **kwargs):
@@ -72,6 +80,10 @@ class LinkListView(ListAPIView):
 class UserLinksView(ListAPIView):
     serializer_class = LinkSerializer
     permission_classes = [IsAuthenticated, IsAdmin]
+    filter_backends = [DjangoFilterBackend, OrderingFilter]
+    filterset_class = LinkFilter
+    ordering_fields = ['created_at', 'updated_at', 'is_active']
+    ordering = ['-created_at']
 
     @user_links_schema
     def get(self, request, *args, **kwargs):
