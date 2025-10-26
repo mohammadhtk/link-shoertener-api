@@ -51,6 +51,7 @@ INSTALLED_APPS = [
     # my apps
     'users.apps.UsersConfig',
     'links.apps.LinksConfig',
+    'analytics.apps.AnalyticsConfig',
 
 ]
 
@@ -62,6 +63,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'utils.middleware.ClickTrackingMiddleware',  # Added click tracking middleware
 ]
 
 ROOT_URLCONF = 'config.urls'
