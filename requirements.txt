@@ -20,6 +20,7 @@ psycopg2-binary==2.9.11
 Pygments==2.19.2
 PyJWT==2.10.1
 pytest==8.4.2
+pytest-django==4.11.1
 python-dotenv==1.1.1
 PyYAML==6.0.3
 referencing==0.37.0
