@@ -1,19 +1,19 @@
 from rest_framework.views import APIView
-from rest_framework.generics import ListAPIView, RetrieveAPIView
+from rest_framework.generics import ListAPIView
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.permissions import AllowAny, IsAuthenticated
-from django_filters.rest_framework import DjangoFilterBackend
-from rest_framework.filters import OrderingFilter, SearchFilter
 from django.shortcuts import redirect
 from drf_spectacular.utils import extend_schema
+from django_filters.rest_framework import DjangoFilterBackend
+from rest_framework.filters import OrderingFilter, SearchFilter
 from .models import Link
 from .serializers import LinkSerializer, LinkCreateSerializer, LinkUpdateSerializer
 from .services import LinkService
 from .filters import LinkFilter
 from users.permissions import (
     IsOwnerOrAdmin, IsAdmin, CanShortenLink,
-     CanEditLink, CanViewStats, CanManageAllLinks,
+    CanViewStats, CanManageAllLinks,
 )
 from analytics.services import AnalyticsService
 from .schemas import (
@@ -94,25 +94,28 @@ class UserLinksView(ListAPIView):
         return Link.objects.filter(user_id=user_id)
 
 
-# Get link details (Owner or Admin)
-class LinkDetailView(RetrieveAPIView):
-    serializer_class = LinkSerializer
+# Get, update, or delete link (Owner or Admin)
+class LinkUpdateView(APIView):
     permission_classes = [IsAuthenticated, IsOwnerOrAdmin]
 
     @link_detail_schema
-    def get(self, request, *args, **kwargs):
-        return super().get(request, *args, **kwargs)
+    def get(self, request, pk):
+        try:
+            link = Link.objects.get(pk=pk)
+        except Link.DoesNotExist:
+            return Response(
+                {'error': 'Link not found'},
+                status=status.HTTP_404_NOT_FOUND
+            )
 
-    def get_queryset(self):
-        user = self.request.user
-        if user.has_permission('manage_all_links'):
-            return Link.objects.all()
-        return Link.objects.filter(user=user)
+        # Check ownership
+        if link.user != request.user and not request.user.has_permission('manage_all_links'):
+            return Response(
+                {'error': 'You do not have permission to view this link'},
+                status=status.HTTP_403_FORBIDDEN
+            )
 
-
-# Update link (Owner or Admin)
-class LinkUpdateView(APIView):
-    permission_classes = [IsAuthenticated, CanEditLink, IsOwnerOrAdmin]
+        return Response(LinkSerializer(link).data)
 
     @link_update_schema
     def patch(self, request, pk):
@@ -157,13 +160,15 @@ class LinkUpdateView(APIView):
 
         return Response(LinkSerializer(link).data)
 
-
-# Delete link (Admin only)
-class LinkDeleteView(APIView):
-    permission_classes = [IsAuthenticated, CanManageAllLinks]
-
     @link_delete_schema
     def delete(self, request, pk):
+        # Check admin permission
+        if not request.user.has_permission('manage_all_links'):
+            return Response(
+                {'error': 'You do not have permission to delete links'},
+                status=status.HTTP_403_FORBIDDEN
+            )
+
         try:
             link = Link.objects.get(pk=pk)
         except Link.DoesNotExist:

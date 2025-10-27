@@ -20,7 +20,6 @@ from .schemas import (
     permission_detail_schema
 )
 
-
 # Register a new user
 class UserRegisterView(APIView):
     permission_classes = [AllowAny]
@@ -36,8 +35,14 @@ class UserRegisterView(APIView):
             password=serializer.validated_data['password']
         )
 
+        tokens = UserService.generate_tokens(user)
+
         return Response(
-            UserSerializer(user).data,
+            {
+                'access': tokens['access'],
+                'refresh': tokens['refresh'],
+                'user': UserSerializer(user).data
+            },
             status=status.HTTP_201_CREATED
         )
 
@@ -95,46 +100,66 @@ class UserListView(ListAPIView):
         return super().get(request, *args, **kwargs)
 
 
-# Get user details (Admin only)
-class UserDetailView(RetrieveAPIView):
-    queryset = User.objects.all()
-    serializer_class = UserSerializer
+# Get, update, or delete user (Admin only)
+class UserDetailView(APIView):
     permission_classes = [IsAuthenticated, CanManageUsers]
 
     @user_detail_schema
-    def get(self, request, *args, **kwargs):
-        return super().get(request, *args, **kwargs)
+    def get(self, request, pk):
+        try:
+            user = User.objects.get(pk=pk)
+        except User.DoesNotExist:
+            return Response(
+                {'error': 'User not found'},
+                status=status.HTTP_404_NOT_FOUND
+            )
 
-
-# Update user (Admin only)
-class UserUpdateView(UpdateAPIView):
-    queryset = User.objects.all()
-    serializer_class = UserUpdateSerializer
-    permission_classes = [IsAuthenticated, CanManageUsers]
-
-    @user_update_put_schema
-    def put(self, request, *args, **kwargs):
-        return self.update(request, *args, **kwargs)
+        return Response(UserSerializer(user).data)
 
     @user_update_patch_schema
-    def patch(self, request, *args, **kwargs):
-        return self.partial_update(request, *args, **kwargs)
+    def patch(self, request, pk):
+        try:
+            user = User.objects.get(pk=pk)
+        except User.DoesNotExist:
+            return Response(
+                {'error': 'User not found'},
+                status=status.HTTP_404_NOT_FOUND
+            )
 
-    def perform_update(self, serializer):
-        user = self.get_object()
+        serializer = UserUpdateSerializer(data=request.data, partial=True)
+        serializer.is_valid(raise_exception=True)
+
         user = UserService.update_user(user, **serializer.validated_data)
-        return user
+        return Response(UserSerializer(user).data)
 
+    @user_update_put_schema
+    def put(self, request, pk):
+        try:
+            user = User.objects.get(pk=pk)
+        except User.DoesNotExist:
+            return Response(
+                {'error': 'User not found'},
+                status=status.HTTP_404_NOT_FOUND
+            )
 
-# Delete user (Admin only)
-class UserDeleteView(DestroyAPIView):
-    queryset = User.objects.all()
-    serializer_class = UserSerializer
-    permission_classes = [IsAuthenticated, CanManageUsers]
+        serializer = UserUpdateSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        user = UserService.update_user(user, **serializer.validated_data)
+        return Response(UserSerializer(user).data)
 
     @user_delete_schema
-    def delete(self, request, *args, **kwargs):
-        return super().delete(request, *args, **kwargs)
+    def delete(self, request, pk):
+        try:
+            user = User.objects.get(pk=pk)
+        except User.DoesNotExist:
+            return Response(
+                {'error': 'User not found'},
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+        user.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
 
 # List all roles
@@ -146,7 +171,6 @@ class RoleListView(ListAPIView):
     @role_list_schema
     def get(self, request, *args, **kwargs):
         return super().get(request, *args, **kwargs)
-
 
 # Get role details
 class RoleDetailView(RetrieveAPIView):
@@ -175,7 +199,6 @@ class RolePermissionsView(APIView):
 
         serializer = PermissionSerializer(role.permissions.all(), many=True)
         return Response(serializer.data)
-
 
 # List all permissions (Admin only)
 class PermissionListView(ListAPIView):

@@ -8,7 +8,6 @@ class UserService:
     # Create a new user with specified role (default: User)
     @staticmethod
     def create_user(username, email, password, role_name=Role.USER):
-
         role = Role.objects.filter(name=role_name).first()
 
         user = User.objects.create_user(
@@ -19,8 +18,9 @@ class UserService:
         )
         return user
 
+    # Authenticate user and return JWT tokens
     @staticmethod
-    def authenticate_user(username, password): # Authenticate user and return JWT tokens
+    def authenticate_user(username, password):
         user = authenticate(username=username, password=password)
         if not user:
             return None
@@ -32,8 +32,18 @@ class UserService:
             'access': str(refresh.access_token),
         }
 
+    # Generate JWT tokens for a user
     @staticmethod
-    def update_user(user, **kwargs): # Update user fields
+    def generate_tokens(user):
+        refresh = RefreshToken.for_user(user)
+        return {
+            'refresh': str(refresh),
+            'access': str(refresh.access_token),
+        }
+
+    # Update user fields
+    @staticmethod
+    def update_user(user, **kwargs):
         if 'role' in kwargs:
             role_name = kwargs.pop('role')
             role = Role.objects.filter(name=role_name).first()
@@ -46,10 +56,12 @@ class UserService:
         user.save()
         return user
 
-class RoleService:
-    @staticmethod
-    def setup_default_roles(): # Setup default roles and permissions
 
+class RoleService:
+
+    # Setup default roles and permissions
+    @staticmethod
+    def setup_default_roles():
         # Define all permissions
         permissions_data = [
             # Guest permissions
