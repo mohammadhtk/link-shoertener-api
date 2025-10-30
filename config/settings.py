@@ -13,6 +13,7 @@ import os
 from pathlib import Path
 from datetime import timedelta
 from dotenv import load_dotenv
+import dj_database_url
 
 load_dotenv()
 
@@ -71,7 +72,7 @@ ROOT_URLCONF = 'config.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [BASE_DIR / 'templates']
+        'DIRS': []
         ,
         'APP_DIRS': True,
         'OPTIONS': {
@@ -97,15 +98,21 @@ WSGI_APPLICATION = 'config.wsgi.application'
 #     }
 # }
 
+# DATABASES = {
+#     'default': {
+#         'ENGINE': 'django.db.backends.postgresql',
+#         'NAME': os.getenv('POSTGRES_DB', 'link_shortener_db'),
+#         'USER': os.getenv('POSTGRES_USER', 'postgres'),
+#         'PASSWORD': os.getenv('POSTGRES_PASSWORD', 'postgres'),
+#         'HOST': os.getenv('POSTGRES_HOST', 'localhost'),
+#         'PORT': os.getenv('POSTGRES_PORT', '5432'),
+#     }
+# }
+
 DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME': os.getenv('POSTGRES_DB', 'link_shortener_db'),
-        'USER': os.getenv('POSTGRES_USER', 'postgres'),
-        'PASSWORD': os.getenv('POSTGRES_PASSWORD', 'postgres'),
-        'HOST': os.getenv('POSTGRES_HOST', 'localhost'),
-        'PORT': os.getenv('POSTGRES_PORT', '5432'),
-    }
+    'default': dj_database_url.config(
+        default=os.environ.get("DATABASE_URL")
+    )
 }
 
 # Password validation
@@ -181,7 +188,35 @@ SIMPLE_JWT = {
 # DRF Spectacular (API Documentation)
 SPECTACULAR_SETTINGS = {
     'TITLE': 'Link Shortener API',
-    'DESCRIPTION': 'A production-ready link shortener with RBAC and analytics',
+    'DESCRIPTION': ''''
+    A production-ready link shortener with Role-Based Access Control (RBAC) and privacy-safe analytics.
+
+    ## Features
+    - **RBAC System**: Three roles (Guest, User, Admin) with granular permissions
+    - **Link Management**: Create, edit, and manage shortened links
+    - **Privacy-Safe Analytics**: Track clicks without storing personal data
+    - **JWT Authentication**: Secure token-based authentication
+    - **Admin Dashboard**: Comprehensive admin panel with Django Admin
+
+    ## Roles & Permissions
+    - **Guest**: Can shorten links (random or custom alias)
+    - **User**: All Guest permissions + add notes, edit links, view statistics
+    - **Admin**: All User permissions + manage all links, manage users, access dashboard
+
+    ## Authentication
+    Most endpoints require JWT authentication. Include the access token in the Authorization header:
+    \`\`\`
+    Authorization: Bearer <access_token>
+    \`\`\`
+    ''',
     'VERSION': '1.0.0',
     'SERVE_INCLUDE_SCHEMA': False,
+    'COMPONENT_SPLIT_REQUEST': True,
+    'TAGS': [
+        {'name': 'Authentication', 'description': 'User registration and login endpoints'},
+        {'name': 'Users', 'description': 'User management endpoints'},
+        {'name': 'Roles & Permissions', 'description': 'RBAC system endpoints'},
+        {'name': 'Links', 'description': 'Link shortening and management endpoints'},
+        {'name': 'Analytics', 'description': 'Click statistics and analytics endpoints'},
+    ],
 }
