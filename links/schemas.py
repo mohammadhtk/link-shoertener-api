@@ -219,3 +219,43 @@ user_links_schema = extend_schema(
         404: OpenApiResponse(description='User not found')
     }
 )
+
+
+redirect_schema = extend_schema(
+tags=['Links'],
+        summary='Get original URL from short code',
+        description='Returns the original URL for a short code. Tracks the click before returning. Mobile apps should use this endpoint to get the URL and then open it.',
+        parameters=[
+            OpenApiParameter(
+                name='code',
+                type=OpenApiTypes.STR,
+                location=OpenApiParameter.PATH,
+                description='Short code or custom alias'
+            )
+        ],
+        responses={
+            200: OpenApiResponse(
+                response={
+                    'type': 'object',
+                    'properties': {
+                        'short_code': {'type': 'string'},
+                        'original_url': {'type': 'string'},
+                        'is_active': {'type': 'boolean'}
+                    }
+                },
+                description='Original URL retrieved successfully',
+                examples=[
+                    OpenApiExample(
+                        'Success',
+                        value={
+                            'short_code': 'abc123',
+                            'original_url': 'https://example.com',
+                            'is_active': True
+                        }
+                    )
+                ]
+            ),
+            404: OpenApiResponse(description='Link not found'),
+            410: OpenApiResponse(description='Link is inactive')
+        }
+)

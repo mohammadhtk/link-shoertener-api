@@ -17,7 +17,7 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import path, include
 from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView
-from links.views import redirect_link
+
 
 urlpatterns = [
     # Admin
@@ -31,6 +31,4 @@ urlpatterns = [
     # API Documentation
     path('api/doc/', SpectacularAPIView.as_view(), name='schema'),
     path('api/schema/', SpectacularSwaggerView.as_view(url_name='schema'), name='swagger-ui'),
-
-    path('<str:code>/', redirect_link, name='redirect'),
 ]

@@ -19,7 +19,7 @@ from analytics.services import AnalyticsService
 from .schemas import (
     link_create_schema, link_list_schema, link_detail_schema,
     link_update_schema, link_delete_schema, link_stats_schema,
-    link_toggle_active_schema, link_check_status_schema, user_links_schema
+    link_toggle_active_schema, link_check_status_schema, user_links_schema, redirect_schema
 )
 
 
@@ -245,18 +245,32 @@ class LinkCheckStatusView(APIView):
         })
 
 
-# Redirect to original URL and track click (privacy-safe)
-@extend_schema(exclude=True)
-def redirect_link(request, code):
-    link = LinkService.get_link_by_code(code)
+# Get original URL for short code (tracks click and returns URL as JSON for mobile apps)
+class RedirectLinkView(APIView):
+    permission_classes = [AllowAny]
 
-    if not link:
-        return Response({'error': 'Link not found'}, status=status.HTTP_404_NOT_FOUND)
+    @redirect_schema
+    def get(self, request, code):
+        link = LinkService.get_link_by_code(code)
 
-    if not link.is_active:
-        return Response({'error': 'Link is inactive'}, status=status.HTTP_410_GONE)
+        if not link:
+            return Response(
+                {'error': 'Link not found'},
+                status=status.HTTP_404_NOT_FOUND
+            )
 
-    # Track the click (privacy-safe - only timestamp)
-    AnalyticsService.track_click(link=link)
+        if not link.is_active:
+            return Response(
+                {'error': 'Link is inactive'},
+                status=status.HTTP_410_GONE
+            )
 
-    return redirect(link.original_url)
+        # Track the click (privacy-safe - only timestamp)
+        AnalyticsService.track_click(link=link)
+
+        return Response({
+            'short_code': link.short_code,
+            'original_url': link.original_url,
+            'is_active': link.is_active
+        })
+
