@@ -198,11 +198,6 @@ SPECTACULAR_SETTINGS = {
     - **JWT Authentication**: Secure token-based authentication
     - **Admin Dashboard**: Comprehensive admin panel with Django Admin
 
-    ## Roles & Permissions
-    - **Guest**: Can shorten links (random or custom alias)
-    - **User**: All Guest permissions + add notes, edit links, view statistics
-    - **Admin**: All User permissions + manage all links, manage users, access dashboard
-
     ## Authentication
     Most endpoints require JWT authentication. Include the access token in the Authorization header:
     \`\`\`
@@ -215,7 +210,6 @@ SPECTACULAR_SETTINGS = {
     'TAGS': [
         {'name': 'Authentication', 'description': 'User registration and login endpoints'},
         {'name': 'Users', 'description': 'User management endpoints'},
-        {'name': 'Roles & Permissions', 'description': 'RBAC system endpoints'},
         {'name': 'Links', 'description': 'Link shortening and management endpoints'},
         {'name': 'Analytics', 'description': 'Click statistics and analytics endpoints'},
     ],
