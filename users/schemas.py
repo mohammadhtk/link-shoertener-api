@@ -106,7 +106,7 @@ user_list_schema = extend_schema(
             name='role',
             type=OpenApiTypes.STR,
             location=OpenApiParameter.QUERY,
-            description='Filter by role (Guest, User, Admin)'
+            description='Filter by role (GUEST, USER, ADMIN)'
         ),
         OpenApiParameter(
             name='search',
