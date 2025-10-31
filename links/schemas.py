@@ -2,7 +2,7 @@ from drf_spectacular.utils import extend_schema, OpenApiResponse, OpenApiExample
 from drf_spectacular.types import OpenApiTypes
 from .serializers import LinkSerializer, LinkCreateSerializer, LinkUpdateSerializer
 
-
+# Create link
 link_create_schema = extend_schema(
     tags=['Links'],
     summary='Create a short link',
@@ -20,9 +20,13 @@ link_create_schema = extend_schema(
                         'short_code': 'abc123',
                         'original_url': 'https://example.com',
                         'custom_alias': None,
+                        'short_url': 'abc123',
                         'note': '',
                         'is_active': True,
-                        'created_at': '2024-01-01T12:00:00Z'
+                        'total_clicks': 0,
+                        'click_timestamps': [],
+                        'created_at': '2024-01-01T12:00:00Z',
+                        'updated_at': '2024-01-01T12:00:00Z'
                     }
                 )
             ]
@@ -30,32 +34,13 @@ link_create_schema = extend_schema(
         403: OpenApiResponse(description='Permission denied')
     },
     examples=[
-        OpenApiExample(
-            'Random Short Code',
-            value={
-                'original_url': 'https://example.com'
-            },
-            request_only=True
-        ),
-        OpenApiExample(
-            'Custom Alias',
-            value={
-                'original_url': 'https://example.com',
-                'custom_alias': 'my-link'
-            },
-            request_only=True
-        ),
-        OpenApiExample(
-            'With Note (User only)',
-            value={
-                'original_url': 'https://example.com',
-                'note': 'My important link'
-            },
-            request_only=True
-        )
+        OpenApiExample('Random Short Code', value={'original_url': 'https://example.com'}, request_only=True),
+        OpenApiExample('Custom Alias', value={'original_url': 'https://example.com', 'custom_alias': 'my-link'}, request_only=True),
+        OpenApiExample('With Note (User only)', value={'original_url': 'https://example.com', 'note': 'My important link'}, request_only=True)
     ]
 )
 
+# List links
 link_list_schema = extend_schema(
     tags=['Links'],
     summary='List links',
@@ -69,52 +54,37 @@ link_list_schema = extend_schema(
     }
 )
 
+# Link details
 link_detail_schema = extend_schema(
     tags=['Links'],
     summary='Get link details',
     description='Retrieve detailed information about a specific link. Must be owner or admin.',
     responses={
-        200: OpenApiResponse(
-            response=LinkSerializer,
-            description='Link details'
-        ),
+        200: OpenApiResponse(response=LinkSerializer, description='Link details'),
         403: OpenApiResponse(description='Permission denied'),
         404: OpenApiResponse(description='Link not found')
     }
 )
 
+# Update link
 link_update_schema = extend_schema(
     tags=['Links'],
     summary='Update link',
     description='Update link details. Users can edit their own links, Admins can edit any link.',
     request=LinkUpdateSerializer,
     responses={
-        200: OpenApiResponse(
-            response=LinkSerializer,
-            description='Link updated successfully'
-        ),
+        200: OpenApiResponse(response=LinkSerializer, description='Link updated successfully'),
         403: OpenApiResponse(description='Permission denied'),
         404: OpenApiResponse(description='Link not found')
     },
     examples=[
-        OpenApiExample(
-            'Update URL',
-            value={'original_url': 'https://newurl.com'},
-            request_only=True
-        ),
-        OpenApiExample(
-            'Update Note',
-            value={'note': 'Updated note'},
-            request_only=True
-        ),
-        OpenApiExample(
-            'Deactivate Link (Admin only)',
-            value={'is_active': False},
-            request_only=True
-        )
+        OpenApiExample('Update URL', value={'original_url': 'https://newurl.com'}, request_only=True),
+        OpenApiExample('Update Note', value={'note': 'Updated note'}, request_only=True),
+        OpenApiExample('Deactivate Link (Admin only)', value={'is_active': False}, request_only=True)
     ]
 )
 
+# Delete link
 link_delete_schema = extend_schema(
     tags=['Links'],
     summary='Delete link',
@@ -126,6 +96,7 @@ link_delete_schema = extend_schema(
     }
 )
 
+# Link statistics
 link_stats_schema = extend_schema(
     tags=['Links'],
     summary='Get link statistics',
@@ -151,20 +122,19 @@ link_stats_schema = extend_schema(
     }
 )
 
+# Toggle active status
 link_toggle_active_schema = extend_schema(
     tags=['Links'],
     summary='Toggle link active status',
     description='Activate or deactivate a link. Admin permission required.',
     responses={
-        200: OpenApiResponse(
-            response=LinkSerializer,
-            description='Link status toggled successfully'
-        ),
+        200: OpenApiResponse(response=LinkSerializer, description='Link status toggled successfully'),
         403: OpenApiResponse(description='Permission denied'),
         404: OpenApiResponse(description='Link not found')
     }
 )
 
+# Check link status
 link_check_status_schema = extend_schema(
     tags=['Links'],
     summary='Check link status',
@@ -172,90 +142,49 @@ link_check_status_schema = extend_schema(
     responses={
         200: OpenApiResponse(
             description='Link status',
-            examples=[
-                OpenApiExample(
-                    'Active Link',
-                    value={
-                        'short_code': 'abc123',
-                        'is_active': True
-                    }
-                )
-            ]
+            examples=[OpenApiExample('Active Link', value={'short_code': 'abc123', 'is_active': True})]
         ),
         404: OpenApiResponse(description='Link not found')
     }
 )
 
+# User-specific links
 user_links_schema = extend_schema(
     tags=['Links'],
     summary='List links for a specific user',
     description='Retrieve all links created by a specific user. Admin permission required.',
     parameters=[
-        OpenApiParameter(
-            name='user_id',
-            type=OpenApiTypes.INT,
-            location=OpenApiParameter.PATH,
-            description='User ID'
-        ),
-        OpenApiParameter(
-            name='page',
-            type=OpenApiTypes.INT,
-            location=OpenApiParameter.QUERY,
-            description='Page number for pagination'
-        ),
-        OpenApiParameter(
-            name='page_size',
-            type=OpenApiTypes.INT,
-            location=OpenApiParameter.QUERY,
-            description='Number of items per page'
-        )
+        OpenApiParameter('user_id', OpenApiTypes.INT, OpenApiParameter.PATH, description='User ID'),
+        OpenApiParameter('page', OpenApiTypes.INT, OpenApiParameter.QUERY, description='Page number for pagination'),
+        OpenApiParameter('page_size', OpenApiTypes.INT, OpenApiParameter.QUERY, description='Number of items per page')
     ],
     responses={
-        200: OpenApiResponse(
-            response=LinkSerializer(many=True),
-            description='List of user links'
-        ),
+        200: OpenApiResponse(response=LinkSerializer(many=True), description='List of user links'),
         403: OpenApiResponse(description='Permission denied - Admin only'),
         404: OpenApiResponse(description='User not found')
     }
 )
 
-
+# Redirect endpoint
 redirect_schema = extend_schema(
-tags=['Links'],
-        summary='Get original URL from short code',
-        description='Returns the original URL for a short code. Tracks the click before returning. Mobile apps should use this endpoint to get the URL and then open it.',
-        parameters=[
-            OpenApiParameter(
-                name='code',
-                type=OpenApiTypes.STR,
-                location=OpenApiParameter.PATH,
-                description='Short code or custom alias'
-            )
-        ],
-        responses={
-            200: OpenApiResponse(
-                response={
-                    'type': 'object',
-                    'properties': {
-                        'short_code': {'type': 'string'},
-                        'original_url': {'type': 'string'},
-                        'is_active': {'type': 'boolean'}
-                    }
-                },
-                description='Original URL retrieved successfully',
-                examples=[
-                    OpenApiExample(
-                        'Success',
-                        value={
-                            'short_code': 'abc123',
-                            'original_url': 'https://example.com',
-                            'is_active': True
-                        }
-                    )
-                ]
-            ),
-            404: OpenApiResponse(description='Link not found'),
-            410: OpenApiResponse(description='Link is inactive')
-        }
+    tags=['Links'],
+    summary='Get original URL from short code',
+    description='Returns the original URL for a short code. Tracks the click before returning.',
+    parameters=[OpenApiParameter('code', OpenApiTypes.STR, OpenApiParameter.PATH, description='Short code or custom alias')],
+    responses={
+        200: OpenApiResponse(
+            response={
+                'type': 'object',
+                'properties': {
+                    'short_code': {'type': 'string'},
+                    'original_url': {'type': 'string'},
+                    'is_active': {'type': 'boolean'}
+                }
+            },
+            description='Original URL retrieved successfully',
+            examples=[OpenApiExample('Success', value={'short_code': 'abc123', 'original_url': 'https://example.com', 'is_active': True})]
+        ),
+        404: OpenApiResponse(description='Link not found'),
+        410: OpenApiResponse(description='Link is inactive')
+    }
 )

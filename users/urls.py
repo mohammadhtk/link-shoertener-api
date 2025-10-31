@@ -2,9 +2,7 @@ from django.urls import path
 from rest_framework_simplejwt.views import TokenRefreshView
 from .views import (
     UserRegisterView, UserLoginView, UserMeView,
-    UserListView, UserDetailView,
-    RoleListView, RoleDetailView, RolePermissionsView,
-    PermissionListView, PermissionDetailView
+    UserListView, UserDetailView
 )
 
 urlpatterns = [
@@ -14,16 +12,7 @@ urlpatterns = [
     path('token/refresh/', TokenRefreshView.as_view(), name='token-refresh'),
     path('me/', UserMeView.as_view(), name='user-me'),
 
-    # User management
+    # User management (Admin only)
     path('users/', UserListView.as_view(), name='user-list'),
     path('users/<int:pk>/', UserDetailView.as_view(), name='user-detail-update-delete'),
-
-    # Roles
-    path('roles/', RoleListView.as_view(), name='role-list'),
-    path('roles/<int:pk>/', RoleDetailView.as_view(), name='role-detail'),
-    path('roles/<int:pk>/permissions/', RolePermissionsView.as_view(), name='role-permissions'),
-
-    # Permissions
-    path('permissions/', PermissionListView.as_view(), name='permission-list'),
-    path('permissions/<int:pk>/', PermissionDetailView.as_view(), name='permission-detail'),
 ]
