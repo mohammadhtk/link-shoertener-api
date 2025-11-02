@@ -1,4 +1,5 @@
 from django.db.models import Count
+from django.db.models.functions import TruncDate, TruncWeek
 from django.utils import timezone
 from datetime import timedelta
 from .models import ClickStats
@@ -6,13 +7,10 @@ from .models import ClickStats
 
 class AnalyticsService:
 
-    # Track a click on a link (privacy-safe - no personal data)
     @staticmethod
     def track_click(link):
-
         return ClickStats.objects.create(link=link)
 
-    # Get stats for a link (privacy-safe)
     @staticmethod
     def get_link_stats(link):
         clicks = link.clicks.all()
@@ -25,15 +23,23 @@ class AnalyticsService:
 
         # Daily clicks (last 30 days)
         thirty_days_ago = timezone.now() - timedelta(days=30)
-        daily_clicks = clicks.filter(clicked_at__gte=thirty_days_ago).extra(
-            select={'day': 'DATE(clicked_at)'}
-        ).values('day').annotate(count=Count('id')).order_by('day')
+        daily_clicks = (
+            clicks.filter(clicked_at__gte=thirty_days_ago)
+            .annotate(day=TruncDate('clicked_at'))
+            .values('day')
+            .annotate(count=Count('id'))
+            .order_by('day')
+        )
 
         # Weekly clicks (last 12 weeks)
         twelve_weeks_ago = timezone.now() - timedelta(weeks=12)
-        weekly_clicks = clicks.filter(clicked_at__gte=twelve_weeks_ago).extra(
-            select={'week': "DATE_TRUNC('week', clicked_at)"}
-        ).values('week').annotate(count=Count('id')).order_by('week')
+        weekly_clicks = (
+            clicks.filter(clicked_at__gte=twelve_weeks_ago)
+            .annotate(week=TruncWeek('clicked_at'))
+            .values('week')
+            .annotate(count=Count('id'))
+            .order_by('week')
+        )
 
         return {
             'total_clicks': total_clicks,
@@ -42,7 +48,6 @@ class AnalyticsService:
             'weekly_clicks': list(weekly_clicks),
         }
 
-    # Get global analytics stats
     @staticmethod
     def get_global_stats():
         from links.models import Link
@@ -53,7 +58,6 @@ class AnalyticsService:
         total_clicks = ClickStats.objects.count()
         total_users = User.objects.count()
 
-        # Top performing links
         top_links = Link.objects.annotate(
             click_count=Count('clicks')
         ).order_by('-click_count')[:10]
@@ -73,28 +77,25 @@ class AnalyticsService:
             ]
         }
 
-    # Get click data formatted for charts
     @staticmethod
     def get_chart_data():
-        # Daily clicks (last 30 days)
         thirty_days_ago = timezone.now() - timedelta(days=30)
-        daily_data = ClickStats.objects.filter(
-            clicked_at__gte=thirty_days_ago
-        ).extra(
-            select={'date': 'DATE(clicked_at)'}
-        ).values('date').annotate(
-            clicks=Count('id')
-        ).order_by('date')
+        daily_data = (
+            ClickStats.objects.filter(clicked_at__gte=thirty_days_ago)
+            .annotate(date=TruncDate('clicked_at'))
+            .values('date')
+            .annotate(clicks=Count('id'))
+            .order_by('date')
+        )
 
-        # Weekly clicks (last 12 weeks)
         twelve_weeks_ago = timezone.now() - timedelta(weeks=12)
-        weekly_data = ClickStats.objects.filter(
-            clicked_at__gte=twelve_weeks_ago
-        ).extra(
-            select={'week': "TO_CHAR(clicked_at, 'IYYY-IW')"}
-        ).values('week').annotate(
-            clicks=Count('id')
-        ).order_by('week')
+        weekly_data = (
+            ClickStats.objects.filter(clicked_at__gte=twelve_weeks_ago)
+            .annotate(week=TruncWeek('clicked_at'))
+            .values('week')
+            .annotate(clicks=Count('id'))
+            .order_by('week')
+        )
 
         return {
             'daily': [
@@ -102,7 +103,7 @@ class AnalyticsService:
                 for item in daily_data
             ],
             'weekly': [
-                {'week': item['week'], 'clicks': item['clicks']}
+                {'week': str(item['week'].date()), 'clicks': item['clicks']}
                 for item in weekly_data
             ]
         }
