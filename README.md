@@ -241,45 +241,6 @@ All endpoints enforce role-based permissions:
 - **User**: Can manage their own links and view statistics
 - **Admin**: Full access to all resources
 
-## Project Structure
-
-\`\`\`
-link-shortener-backend/
-├── config/                 # Django project settings
-│   ├── settings/          # Split settings (base, dev, prod)
-│   ├── urls.py           # Root URL configuration
-│   └── wsgi.py           # WSGI configuration
-├── users/                 # User management app
-│   ├── models.py         # User model
-│   ├── views.py          # User API views
-│   ├── serializers.py    # User serializers
-│   ├── services.py       # User business logic
-│   ├── permissions.py    # Custom permissions
-│   ├── management/       # Management commands
-│   │   └── commands/
-│   │       ├── setup_rbac.py    # Setup roles & permissions
-│   │       └── create_admin.py  # Create admin user
-│   └── tests/            # User tests
-├── links/                 # Link management app
-│   ├── models.py         # Link model
-│   ├── views.py          # Link API views
-│   ├── serializers.py    # Link serializers
-│   ├── services.py       # Link business logic
-│   └── tests/            # Link tests
-├── analytics/             # Analytics app
-│   ├── models.py         # ClickStats model
-│   ├── views.py          # Analytics API views
-│   ├── serializers.py    # Analytics serializers
-│   ├── services.py       # Analytics business logic
-│   └── tests/            # Analytics tests
-├── common/                # Common utilities
-│   ├── helpers.py        # Helper functions
-│   └── tests/            # Common tests
-├── docker-compose.yml    # Docker Compose configuration
-├── Dockerfile            # Docker image configuration
-├── requirements.txt      # Python dependencies
-└── README.md            # This file
-\`\`\`
 
 ## Role-Based Access Control (RBAC)
 
@@ -407,6 +368,7 @@ CORS_ALLOWED_ORIGINS=http://localhost:3000,http://127.0.0.1:3000
 \`\`\`
 
 ## API Documentation
+https://roadmap.sh/projects/url-shortening-service
 
 Once the server is running, visit:
 - **Swagger UI**: http://localhost:8000/api/docs/
